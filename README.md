@@ -27,7 +27,7 @@ Config will be populated according to the following precendence:
 1. System config
    * Windows: `/HKEY_LOCAL_MACHINE/SOFTWARE/Company/Product/str_field`
 2. User config
-   * Windows: `/HKEY_CURRENT_USER/SOFTWARE/Company/Product/str_field`
+   * Windows: `/HKEY_CURRENT_USER/Software/Company/Product/str_field`
    * Mac: `defaults read com.company.product str_field`
 3. dot-env: `.env`: `STR_FIELD=VALUE`
 4. Environment variables: `STR_FIELD=VALUE`
