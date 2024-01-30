@@ -1,6 +1,8 @@
-from abc import ABC
+import abc
 
 
-class ConfigLoader(ABC):
+class ConfigLoader(abc.ABC):
+
+    @abc.abstractmethod
     def load(self, config):
         pass
