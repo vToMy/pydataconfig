@@ -1,12 +1,11 @@
 import platform
-import warnings
 from pathlib import Path
 
 from pydataconfig.base_loader import ConfigLoader
 from pydataconfig.cli_loader.cli_loader import CliLoader
 from pydataconfig.composite_loader import CompositeLoader
-from pydataconfig.env_loader.env_loader import EnvLoader
 from pydataconfig.config_file_loader.config_file_loader import ConfigFileLoader
+from pydataconfig.env_loader.env_loader import EnvLoader
 from pydataconfig.field_converter import FieldConverter
 
 
@@ -39,10 +38,7 @@ def create_config_loader(cli: bool = True,
         config_loaders.append(ConfigFileLoader(field_converter=field_converter, config_type='json',
                                                config_path=config_path))
     if dot_env:
-        try:
-            config_loaders.append(ConfigFileLoader(field_converter=field_converter, config_type='.env'))
-        except ImportError:
-            warnings.warn('`python-dotenv` package must be installed to use `dot_env`')
+        config_loaders.append(ConfigFileLoader(field_converter=field_converter, config_type='.env'))
     if env:
         config_loaders.append(EnvLoader(field_converter=field_converter))
     if cli:
