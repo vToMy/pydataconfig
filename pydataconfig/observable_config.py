@@ -12,57 +12,94 @@ type CallbackType[**P] = Callable[P, Any] | Callable[P, Awaitable[Any]]
 type TimeoutType = int | float
 
 
+def get_running_loop() -> asyncio.AbstractEventLoop | None:
+    try:
+        return asyncio.get_running_loop()
+    except RuntimeError:
+        return None
+
+
 class Event[**P]:
     def __init__(self):
         self.sync_callbacks: list[Callable[P, Any]] = []
         self.async_callbacks: list[Callable[P, Awaitable[Any]]] = []
-        self.thread_condition = threading.Event()
-        self.asyncio_condition = asyncio.Event()
+        self.thread_condition = threading.Condition()
+        self.asyncio_condition = asyncio.Condition()
+
+        self.state_lock = threading.Lock()
+        self.async_state_lock = asyncio.Lock()
         self.last_args: P.args = None
         self.last_kwargs: P.kwargs = None
+        self.async_callbacks_tasks: list[asyncio.Task] = []
 
-    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> None:
-        self.clear()
-        for callback in self.sync_callbacks:
-            callback(*args, **kwargs)
-        for callback in self.async_callbacks:
-            asyncio.get_running_loop().run_until_complete(callback(*args, **kwargs))
-        self.last_args = args
-        self.last_kwargs = kwargs
-        self.set()
-
-    def __iadd__(self, callback: CallbackType[P]) -> Self:
+    def add_callback(self, callback: CallbackType[P]) -> None:
         if inspect.iscoroutinefunction(callback):
             self.async_callbacks.append(callback)
         else:
             self.sync_callbacks.append(callback)
-        return self
 
-    def __isub__(self, callback: CallbackType[P]) -> Self:
+    def remove_callback(self, callback: CallbackType[P]) -> None:
         if inspect.iscoroutinefunction(callback):
             self.async_callbacks.remove(callback)
         else:
             self.sync_callbacks.remove(callback)
+
+    def __iadd__(self, callback: CallbackType[P]) -> Self:
+        self.add_callback(callback)
         return self
+
+    def __isub__(self, callback: CallbackType[P]) -> Self:
+        self.remove_callback(callback)
+        return self
+
+    def emit(self, *args: P.args, **kwargs: P.kwargs) -> None:
+        with self.state_lock:
+            self.last_args = args
+            self.last_kwargs = kwargs
+        for callback in self.sync_callbacks:
+            callback(*args, **kwargs)
+        self.set()
+
+    async def async_emit(self, *args: P.args, **kwargs: P.kwargs) -> None:
+        async with self.async_state_lock:
+            self.last_args = args
+            self.last_kwargs = kwargs
+            self.async_callbacks_tasks = []
+        for async_callback in self.async_callbacks:
+            self.async_callbacks_tasks.append(asyncio.create_task(async_callback(*args, **kwargs)))
+        await self.set_async()
+
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> None:
+        self.emit(*args, **kwargs)
+        if get_running_loop():
+            asyncio.create_task(self.async_emit(*args, **kwargs))
+
+    def wait(self, timeout: TimeoutType = None) -> tuple[P.args, P.kwargs]:
+        with self.state_lock:
+            last_args, last_kwargs = self.last_args, self.last_kwargs
+        with self.thread_condition:
+            self.thread_condition.wait(timeout)
+        return last_args, last_kwargs
+
+    async def wait_async(self, wait_for_async_callbacks_tasks: bool = False) -> tuple[P.args, P.kwargs]:
+        async with self.async_state_lock:
+            last_args, last_kwargs, async_callbacks_tasks = self.last_args, self.last_kwargs, self.async_callbacks_tasks
+        async with self.asyncio_condition:
+            await self.asyncio_condition.wait()
+        if wait_for_async_callbacks_tasks and async_callbacks_tasks:
+            await asyncio.gather(*async_callbacks_tasks)
+        return last_args, last_kwargs
 
     def __await__(self) -> Generator[Any, None, tuple[P.args, P.kwargs]]:
         return self.wait_async().__await__()
 
-    async def wait_async(self) -> tuple[P.args, P.kwargs]:
-        await self.asyncio_condition.wait()
-        return self.last_args, self.last_kwargs
-
-    def wait(self, timeout: TimeoutType = None) -> tuple[P.args, P.kwargs]:
-        self.thread_condition.wait(timeout)
-        return self.last_args, self.last_kwargs
-
     def set(self) -> None:
-        self.thread_condition.set()
-        self.asyncio_condition.set()
+        with self.thread_condition:
+            self.thread_condition.notify_all()
 
-    def clear(self) -> None:
-        self.thread_condition.clear()
-        self.asyncio_condition.clear()
+    async def set_async(self):
+        async with self.asyncio_condition:
+            self.asyncio_condition.notify_all()
 
 
 ON_CHANGED_PATTERN = re.compile(r'on_(.+)_changed')
