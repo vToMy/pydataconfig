@@ -1,3 +1,5 @@
+from io import StringIO
+
 import dataclasses
 import operator
 import os
@@ -7,7 +9,7 @@ import sys
 import unittest
 from pathlib import Path
 
-from pydataconfig import create_config_loader
+from pydataconfig import create_config_loader, CliLoader
 
 
 @dataclasses.dataclass
@@ -28,13 +30,42 @@ class Config:
                                                                               re.compile(r'default_pattern_value2')])
 
 
+CLI_HELP_OUTPUT = '''
+usage: _jb_unittest_runner.py [-h] [--str-field STR_FIELD]
+                              [--int-field INT_FIELD]
+                              [--bool-field-true | --no-bool-field-true]
+                              [--bool-field-false | --no-bool-field-false]
+                              [--path-field PATH_FIELD]
+                              [--pattern-field PATTERN_FIELD]
+                              [--list-str-field [LIST_STR_FIELD ...]]
+                              [--list-int-field [LIST_INT_FIELD ...]]
+                              [--list-bool-field [LIST_BOOL_FIELD ...]]
+                              [--list-path-field [LIST_PATH_FIELD ...]]
+                              [--list-pattern-field [LIST_PATTERN_FIELD ...]]
+
+options:
+  -h, --help            show this help message and exit
+  --str-field STR_FIELD
+  --int-field INT_FIELD
+  --bool-field-true, --no-bool-field-true
+  --bool-field-false, --no-bool-field-false
+  --path-field PATH_FIELD
+  --pattern-field PATTERN_FIELD
+  --list-str-field [LIST_STR_FIELD ...]
+  --list-int-field [LIST_INT_FIELD ...]
+  --list-bool-field [LIST_BOOL_FIELD ...]
+  --list-path-field [LIST_PATH_FIELD ...]
+  --list-pattern-field [LIST_PATTERN_FIELD ...]
+'''.lstrip()
+
+
 class PyDataConfigTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.config = Config()
 
     def test_default_value(self):
-        config_loader = create_config_loader(self.config, cli=False, env=False)
+        config_loader = create_config_loader(self.config)
         config_loader.load()
         self.assertEqual(Config.str_field, self.config.str_field)
         self.assertEqual(Config.int_field, self.config.int_field)
@@ -46,6 +77,13 @@ class PyDataConfigTest(unittest.TestCase):
         self.assertEqual(Config.list_bool_field, self.config.list_bool_field)
         self.assertEqual(Config.list_path_field, self.config.list_path_field)
         self.assertEqual(Config.list_pattern_field, self.config.list_pattern_field)
+
+    def test_cli_help(self):
+        config_loader = CliLoader(self.config)
+        help_output = StringIO()
+        config_loader.print_help(help_output)
+        help_output.seek(0)
+        self.assertEqual(CLI_HELP_OUTPUT, help_output.read())
 
     def test_cli(self):
         sys.argv[1:] = shlex.split(
@@ -61,7 +99,7 @@ class PyDataConfigTest(unittest.TestCase):
             ' --list-path-field cli_path_value1 cli_path_value2'
             ' --list-pattern-field cli_pattern_value1 cli_pattern_value2'
         )
-        config_loader = create_config_loader(self.config)
+        config_loader = create_config_loader(self.config, cli=True)
         config_loader.load()
         self.assertEqual('cli_str_value', self.config.str_field)
         self.assertEqual(43, self.config.int_field)
@@ -89,7 +127,7 @@ class PyDataConfigTest(unittest.TestCase):
         os.environ['list_pattern_field'] = ','.join(map(operator.attrgetter('pattern'),
                                                         map(re.compile, ['env_pattern_value1',
                                                                          'env_pattern_value2'])))
-        config_loader = create_config_loader(self.config, cli=False)
+        config_loader = create_config_loader(self.config, env=True)
         config_loader.load()
         self.assertEqual(os.environ['str_field'], self.config.str_field)
         self.assertEqual(int(os.environ['int_field']), self.config.int_field)

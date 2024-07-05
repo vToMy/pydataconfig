@@ -11,10 +11,10 @@ class CliLoader(ConfigLoader):
     def __init__(self,
                  config,
                  field_converter: FieldConverter = FieldConverter(),
-                 argument_parser: argparse.ArgumentParser = argparse.ArgumentParser()):
+                 argument_parser: argparse.ArgumentParser = None):
         self.config = config
         self.field_converter = field_converter
-        self.argument_parser = argument_parser
+        self.argument_parser = argument_parser or argparse.ArgumentParser()
         self.config_fields = {field.name: field for field in dataclasses.fields(self.config)}
 
         for field_name, field in self.config_fields.items():
@@ -35,3 +35,6 @@ class CliLoader(ConfigLoader):
         for arg_name, arg_value in vars(namespace).items():
             if arg_name in self.config_fields:
                 setattr(self.config, arg_name, arg_value)
+
+    def print_help(self, *args, **kwargs):
+        self.argument_parser.print_help(*args, **kwargs)

@@ -12,8 +12,8 @@ from pydataconfig.field_converter import FieldConverter
 def create_config_loader(
         config,
         field_converter: FieldConverter = FieldConverter(),
-        cli: bool = True,
-        dot_env: bool = False, env: bool = True,
+        cli: bool = False,
+        dot_env: bool = False, env: bool = False,
         config_path: Path = None,
         system_global: bool = False, system_user: bool = False,
         domain: str = None, company_name: str = None, product_name: str = None) -> ConfigLoader:
