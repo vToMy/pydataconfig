@@ -6,9 +6,9 @@ import dataclasses
 
 @dataclasses.dataclass
 class Config:
-  str_field: str
+  str_field: str = None
 
-config_loader = create_config_loader.create_config_loader(
+config_loader = pydataconfig.create_config_loader(
   cli=True,
   dot_env=True,
   env=True,
@@ -19,11 +19,11 @@ config_loader = create_config_loader.create_config_loader(
   product_name='Product')
 
 config = Config()
-config_loader.load_config(config)
+config_loader.load(config)
 ```
 
 Load app external configuration into a `dataclass` easily.
-Config will be populated according to the following precendence:
+Config will be populated according to the following precedence:
 1. System config
    * Windows: `/HKEY_LOCAL_MACHINE/SOFTWARE/Company/Product/str_field`
 2. User config

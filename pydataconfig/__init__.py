@@ -13,7 +13,7 @@ def create_config_loader(cli: bool = True,
                          dot_env: bool = False, env: bool = True,
                          config_path: Path = None,
                          system_global: bool = False, system_user: bool = False,
-                         domain: str = None, company_name: str = None, product_name: str = None) -> CompositeLoader:
+                         domain: str = None, company_name: str = None, product_name: str = None) -> ConfigLoader:
     config_loaders = []
     field_converter = FieldConverter()
     if system_global or system_user:
@@ -43,4 +43,6 @@ def create_config_loader(cli: bool = True,
         config_loaders.append(EnvLoader(field_converter=field_converter))
     if cli:
         config_loaders.append(CliLoader(field_converter=field_converter))
+    if len(config_loaders) == 1:
+        return config_loaders[0]
     return CompositeLoader(config_loaders)
