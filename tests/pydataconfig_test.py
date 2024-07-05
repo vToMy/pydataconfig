@@ -34,8 +34,8 @@ class PyDataConfigTest(unittest.TestCase):
         self.config = Config()
 
     def test_default_value(self):
-        config_loader = create_config_loader(cli=False, env=False)
-        config_loader.load(self.config)
+        config_loader = create_config_loader(self.config, cli=False, env=False)
+        config_loader.load()
         self.assertEqual(Config.str_field, self.config.str_field)
         self.assertEqual(Config.int_field, self.config.int_field)
         self.assertEqual(Config.bool_field_true, self.config.bool_field_true)
@@ -61,8 +61,8 @@ class PyDataConfigTest(unittest.TestCase):
             ' --list-path-field cli_path_value1 cli_path_value2'
             ' --list-pattern-field cli_pattern_value1 cli_pattern_value2'
         )
-        config_loader = create_config_loader()
-        config_loader.load(self.config)
+        config_loader = create_config_loader(self.config)
+        config_loader.load()
         self.assertEqual('cli_str_value', self.config.str_field)
         self.assertEqual(43, self.config.int_field)
         self.assertEqual(False, self.config.bool_field_true)
@@ -89,8 +89,8 @@ class PyDataConfigTest(unittest.TestCase):
         os.environ['list_pattern_field'] = ','.join(map(operator.attrgetter('pattern'),
                                                         map(re.compile, ['env_pattern_value1',
                                                                          'env_pattern_value2'])))
-        config_loader = create_config_loader(cli=False)
-        config_loader.load(self.config)
+        config_loader = create_config_loader(self.config, cli=False)
+        config_loader.load()
         self.assertEqual(os.environ['str_field'], self.config.str_field)
         self.assertEqual(int(os.environ['int_field']), self.config.int_field)
         self.assertEqual(False, self.config.bool_field_true)

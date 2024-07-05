@@ -8,7 +8,10 @@ import dataclasses
 class Config:
   str_field: str = None
 
+
+config = Config()
 config_loader = pydataconfig.create_config_loader(
+  config,
   cli=True,
   dot_env=True,
   env=True,
@@ -18,8 +21,7 @@ config_loader = pydataconfig.create_config_loader(
   company_name='Company',
   product_name='Product')
 
-config = Config()
-config_loader.load(config)
+config_loader.load()
 ```
 
 Load app external configuration into a `dataclass` easily.

@@ -6,6 +6,6 @@ class CompositeLoader(ConfigLoader):
     def __init__(self, config_loaders: list[ConfigLoader]):
         self.config_loaders = config_loaders
 
-    def load(self, config):
+    def load(self):
         for config_loader in self.config_loaders:
-            config_loader.load(config)
+            config_loader.load()

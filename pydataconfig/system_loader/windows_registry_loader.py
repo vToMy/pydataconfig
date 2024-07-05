@@ -12,13 +12,14 @@ class SystemConfigType(enum.Enum):
 
 class WindowsRegistryLoader(ConfigLoader):
 
-    def __init__(self, company_name: str, product_name: str, system_config_type: SystemConfigType):
+    def __init__(self, config, company_name: str, product_name: str, system_config_type: SystemConfigType):
+        self.config = config
         self.company_name = company_name
         self.product_name = product_name
         self.system_config_type = system_config_type
+        self.config_fields = {field.name: field for field in dataclasses.fields(self.config)}
 
-    def load(self, config):
-        config_fields = {field.name: field for field in dataclasses.fields(config)}
+    def load(self):
         if self.system_config_type is SystemConfigType.GLOBAL:
             key = winreg.HKEY_LOCAL_MACHINE
             software = 'SOFTWARE'
@@ -32,6 +33,6 @@ class WindowsRegistryLoader(ConfigLoader):
         with winreg.OpenKey(key, sub_key, 0, winreg.KEY_READ) as key_handle:
             for i in range(winreg.QueryInfoKey(key_handle)[1]):
                 name, value, value_type = winreg.EnumValue(key_handle, i)
-                field = config_fields.get(name)
+                field = self.config_fields.get(name)
                 if field:
-                    setattr(config, name, value)
+                    setattr(self.config, name, value)
