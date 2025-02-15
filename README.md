@@ -25,9 +25,10 @@ config_loader.load()
 ```
 
 Load app external configuration into a `dataclass` easily.
-Config will be populated according to the following precedence:
+Config will be populated according to the following precedence (from lowest to highest):
 1. System config
    * Windows: `/HKEY_LOCAL_MACHINE/SOFTWARE/Company/Product/str_field`
+   * Mac: `defaults read /Library/Preferences/com.company.product str_field`
 2. User config
    * Windows: `/HKEY_CURRENT_USER/Software/Company/Product/str_field`
    * Mac: `defaults read com.company.product str_field`

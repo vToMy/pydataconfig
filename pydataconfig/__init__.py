@@ -7,6 +7,7 @@ from pydataconfig.composite_loader import CompositeLoader
 from pydataconfig.config_file_loader.config_file_loader import ConfigFileLoader, ConfigType
 from pydataconfig.env_loader.env_loader import EnvLoader
 from pydataconfig.field_converter import FieldConverter
+from pydataconfig.system_loader import SystemConfigType
 
 
 def create_config_loader(
@@ -23,13 +24,19 @@ def create_config_loader(
             if not domain:
                 raise ValueError('Missing required parameter for darwin system loader: `domain`')
             from pydataconfig.system_loader.darwin_defaults_loader import DarwinDefaultsLoader
-            config_loaders.append(DarwinDefaultsLoader(config, domain))
+
+            if system_global:
+                config_loaders.append(DarwinDefaultsLoader(config, domain=domain,
+                                                           system_config_type=SystemConfigType.GLOBAL))
+            if system_user:
+                config_loaders.append(DarwinDefaultsLoader(config, domain=domain,
+                                                           system_config_type=SystemConfigType.USER))
         elif platform.system() == 'Windows':
             if not company_name or not product_name:
                 raise ValueError('Missing one or more required parameters for windows system loader:'
                                  ' `company_name` and `product_name`')
             from pydataconfig.system_loader.windows_registry_loader import WindowsRegistryLoader
-            from pydataconfig.system_loader.windows_registry_loader import SystemConfigType
+
             if system_global:
                 config_loaders.append(WindowsRegistryLoader(config,
                                                             company_name=company_name, product_name=product_name,

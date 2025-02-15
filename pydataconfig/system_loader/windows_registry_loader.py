@@ -1,13 +1,9 @@
 import dataclasses
-import enum
+
 import winreg
 
 from pydataconfig.base_loader import ConfigLoader
-
-
-class SystemConfigType(enum.Enum):
-    GLOBAL = enum.auto()
-    USER = enum.auto()
+from pydataconfig.system_loader import SystemConfigType
 
 
 class WindowsRegistryLoader(ConfigLoader):
